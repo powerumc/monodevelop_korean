@@ -39,13 +39,13 @@ using System.Collections.Generic;
 
 namespace MonoDevelop.GtkCore.GuiBuilder
 {
-	public class CombinedDesignView : AbstractViewContent
+	public class CombinedDesignView : ViewContent
 	{
-		IViewContent content;
+		ViewContent content;
 		Gtk.Widget control;
 		List<TabView> tabs = new List<TabView> ();
 		
-		public CombinedDesignView (IViewContent content)
+		public CombinedDesignView (ViewContent content)
 		{
 			this.content = content;
 	/* This code causes that chagnes in a version control view always select the source code view.
@@ -107,12 +107,10 @@ namespace MonoDevelop.GtkCore.GuiBuilder
 			ShowPage (0);*/
 		}
 		
-		public override MonoDevelop.Projects.Project Project {
-			get { return base.Project; }
-			set { 
-				base.Project = value; 
-				content.Project = value; 
-			}
+		protected override void OnProjectChanged ()
+		{
+			base.OnProjectChanged ();
+			content.Project = Project; 
 		}
 		
 		protected override void OnWorkbenchWindowChanged (EventArgs e)
@@ -186,15 +184,6 @@ namespace MonoDevelop.GtkCore.GuiBuilder
 			content.Save (fileName);
 		}
 		
-		public override bool IsDirty {
-			get {
-				return content.IsDirty;
-			}
-			set {
-				content.IsDirty = value;
-			}
-		}
-		
 		public override bool IsReadOnly
 		{
 			get {
@@ -217,7 +206,7 @@ namespace MonoDevelop.GtkCore.GuiBuilder
 		
 		void OnTextDirtyChanged (object s, EventArgs args)
 		{
-			OnDirtyChanged (args);
+			IsDirty = content.IsDirty;
 		}
 		
 		void OnActiveDocumentChanged (object s, EventArgs args)
@@ -254,7 +243,7 @@ namespace MonoDevelop.GtkCore.GuiBuilder
 		}
 	}
 	
-	class TabView: AbstractBaseViewContent, IAttachableViewContent
+	class TabView: BaseViewContent
 	{
 		string label;
 		Gtk.Widget content;
@@ -272,24 +261,6 @@ namespace MonoDevelop.GtkCore.GuiBuilder
 			return base.GetContent (type);
 		}
 		
-		#region IAttachableViewContent implementation
-		public virtual void Selected ()
-		{
-		}
-
-		public virtual void Deselected ()
-		{
-		}
-
-		public virtual void BeforeSave ()
-		{
-		}
-
-		public virtual void BaseContentChanged ()
-		{
-		}
-		#endregion
-
 		public override Widget Control {
 			get {
 				return content;

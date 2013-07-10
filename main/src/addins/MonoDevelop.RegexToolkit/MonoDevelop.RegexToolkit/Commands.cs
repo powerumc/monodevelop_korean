@@ -40,7 +40,7 @@ namespace MonoDevelop.RegexToolkit
 		ShowRegexToolkit
 	}
 	
-	class ViewOnlyContent : AbstractViewContent
+	class ViewOnlyContent : ViewContent
 	{
 		Widget widget;
 		
@@ -64,7 +64,7 @@ namespace MonoDevelop.RegexToolkit
 		
 	}
 	
-	class DefaultAttachableViewContent : AbstractAttachableViewContent
+	class DefaultAttachableViewContent : BaseViewContent
 	{
 		Widget widget;
 		

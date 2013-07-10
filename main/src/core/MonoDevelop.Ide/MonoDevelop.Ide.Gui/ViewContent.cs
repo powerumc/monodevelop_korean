@@ -33,10 +33,8 @@ using MonoDevelop.Projects;
 
 namespace MonoDevelop.Ide.Gui
 {
-	public abstract class AbstractViewContent : AbstractBaseViewContent, IViewContent
+	public abstract class ViewContent : BaseViewContent
 	{
-		#region IViewContent Members
-
 		private string untitledName = "";
 		public virtual string UntitledName {
 			get { return untitledName; }
@@ -58,8 +56,8 @@ namespace MonoDevelop.Ide.Gui
 			get { return (contentName == null); }
 		}
 
-		private bool isDirty;
-		public virtual bool IsDirty {
+		bool isDirty;
+		public bool IsDirty {
 			get { return isDirty; }
 			set {
 				if (value != isDirty) {
@@ -72,7 +70,6 @@ namespace MonoDevelop.Ide.Gui
 		public virtual bool IsReadOnly {
 			get { return false; }
 		}
-
 
 		public virtual bool IsHidden {
 			get { return false; }
@@ -88,7 +85,16 @@ namespace MonoDevelop.Ide.Gui
 			get { return null; }
 		}
 
-		public virtual Project Project { get; set; }
+		Project project;
+		public Project Project {
+			get { return project; }
+			set {
+				if (project != value) {
+					project = value;
+					OnProjectChanged ();
+				}
+			}
+		}
 
 		public string PathRelativeToProject {
 			get { return Project == null ? null : FileService.AbsoluteToRelativePath (Project.BaseDirectory, ContentName); }
@@ -96,20 +102,27 @@ namespace MonoDevelop.Ide.Gui
 
 		public virtual void Save ()
 		{
-			OnBeforeSave (EventArgs.Empty);
 			this.Save (contentName);
 		}
 
 		public virtual void Save (string fileName)
 		{
-			throw new NotImplementedException ();
+			throw new NotSupportedException ();
 		}
 		
 		public virtual void DiscardChanges ()
 		{
 		}
 
-		public abstract void Load (string fileName);
+		public virtual bool CanReuseView (string fileName)
+		{
+			return false;
+		}
+
+		public virtual void Load (string fileName)
+		{
+			throw new NotSupportedException ();
+		}
 		
 		public virtual void LoadNew (System.IO.Stream content, string mimeType)
 		{
@@ -120,35 +133,28 @@ namespace MonoDevelop.Ide.Gui
 
 		public event EventHandler DirtyChanged;
 
-		public event EventHandler BeforeSave;
-
 		public event EventHandler ContentChanged;
 
-		#endregion
-
-
-		public virtual void OnContentChanged (EventArgs e)
+		protected virtual void OnContentChanged (EventArgs e)
 		{
 			if (ContentChanged != null)
 				ContentChanged (this, e);
 		}
 
-		public virtual void OnDirtyChanged (EventArgs e)
+		protected virtual void OnDirtyChanged (EventArgs e)
 		{
 			if (DirtyChanged != null)
 				DirtyChanged (this, e);
 		}
 
-		public virtual void OnBeforeSave (EventArgs e)
-		{
-			if (BeforeSave != null)
-				BeforeSave (this, e);
-		}
-
-		public virtual void OnContentNameChanged (EventArgs e)
+		protected virtual void OnContentNameChanged (EventArgs e)
 		{
 			if (ContentNameChanged != null)
 				ContentNameChanged (this, e);
+		}
+
+		protected virtual void OnProjectChanged ()
+		{
 		}
 	}
 }

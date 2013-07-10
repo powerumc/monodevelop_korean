@@ -52,7 +52,7 @@ namespace MonoDevelop.VersionControl
 			foreach (var item in items) {
 				var document = IdeApp.Workbench.OpenDocument (item.Path, OpenDocumentOptions.Default | OpenDocumentOptions.OnlyInternalViewer);
 				if (document != null)
-					document.Window.SwitchView (document.Window.FindView<IBlameView> ());
+					document.Window.SwitchView (document.Window.FindView<BlameView> ());
 			}
 			
 			return true;

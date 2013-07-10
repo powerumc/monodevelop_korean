@@ -58,8 +58,8 @@ namespace MonoDevelop.VersionControl.Views
 				var item = new VersionControlItem (repo, document.Project, document.FileName, false, null);
 				var vcInfo = new VersionControlDocumentInfo (document.PrimaryView, item, item.Repository);
 				TryAttachView <IDiffView> (document, vcInfo, DiffCommand.DiffViewHandlers);
-				TryAttachView <IBlameView> (document, vcInfo, BlameCommand.BlameViewHandlers);
-				TryAttachView <ILogView> (document, vcInfo, LogCommand.LogViewHandlers);
+				TryAttachView <BlameView> (document, vcInfo, BlameCommand.BlameViewHandlers);
+				TryAttachView <LogView> (document, vcInfo, LogCommand.LogViewHandlers);
 				TryAttachView <IMergeView> (document, vcInfo, MergeCommand.MergeViewHandlers);
 			} catch (Exception ex) {
 				// If a user is hitting this, it will show a dialog box every time they
@@ -70,13 +70,12 @@ namespace MonoDevelop.VersionControl.Views
 		}
 		
 		void TryAttachView <T>(Document document, VersionControlDocumentInfo info, string type)
-			where T : IAttachableViewContent
 		{
 			var handler = AddinManager.GetExtensionObjects<IVersionControlViewHandler<T>> (type)
 				.Where (h => h.CanHandle (info.Item, info.Document))
 				.FirstOrDefault ();
 			if (handler != null)
-				document.Window.AttachViewContent (handler.CreateView (info));
+				document.Window.AttachViewContent ((BaseViewContent)(object)handler.CreateView (info));
 		}
 	}
 }

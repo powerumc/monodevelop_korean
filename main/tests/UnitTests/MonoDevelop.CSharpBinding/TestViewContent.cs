@@ -36,7 +36,7 @@ using MonoDevelop.Ide.Gui.Content;
 
 namespace MonoDevelop.CSharpBinding.Tests
 {
-	public class TestViewContent : AbstractViewContent, IEditableTextBuffer, Mono.TextEditor.ITextEditorDataProvider
+	public class TestViewContent : ViewContent, IEditableTextBuffer, Mono.TextEditor.ITextEditorDataProvider
 	{
 		TextEditorData data;
 		

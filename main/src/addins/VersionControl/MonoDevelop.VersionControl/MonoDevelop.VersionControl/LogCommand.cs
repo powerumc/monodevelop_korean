@@ -56,12 +56,12 @@ namespace MonoDevelop.VersionControl
 					document = IdeApp.Workbench.OpenDocument (item.Path, OpenDocumentOptions.Default | OpenDocumentOptions.OnlyInternalViewer);
 
 				if (document != null) {
-					document.Window.SwitchView (document.Window.FindView<ILogView> ());
+					document.Window.SwitchView (document.Window.FindView<LogView> ());
 				} else {
 					VersionControlDocumentInfo info = new VersionControlDocumentInfo (null, item, item.Repository);
 					LogView logView = new LogView (info);
 					info.Document = IdeApp.Workbench.OpenDocument (logView, true).PrimaryView;
-					logView.Selected ();	
+					logView.LoadContent ();	
 				}
 			}
 			

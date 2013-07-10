@@ -56,7 +56,7 @@ using Mono.Addins;
 
 namespace MonoDevelop.SourceEditor
 {	
-	public class SourceEditorView : AbstractViewContent, IExtensibleTextEditor, IBookmarkBuffer, IClipboardHandler, 
+	public class SourceEditorView : ViewContent, IExtensibleTextEditor, IBookmarkBuffer, IClipboardHandler, 
 		ICompletionWidget,  ISplittable, IFoldable, IToolboxDynamicProvider, IEncodedTextContent,
 		ICustomFilteringToolboxConsumer, IZoomable, ITextEditorResolver, Mono.TextEditor.ITextEditorDataProvider,
 		ICodeTemplateHandler, ICodeTemplateContextProvider, ISupportsProjectReload, IPrintable
@@ -119,15 +119,9 @@ namespace MonoDevelop.SourceEditor
 			}
 		}
 		
-		public override Project Project {
-			get {
-				return base.Project;
-			}
-			set {
-				if (value != base.Project)
-					((StyledSourceEditorOptions)SourceEditorWidget.TextEditor.Options).UpdateStyleParent (value, loadedMimeType);
-				base.Project = value;
-			}
+		protected override void OnProjectChanged ()
+		{
+			((StyledSourceEditorOptions)SourceEditorWidget.TextEditor.Options).UpdateStyleParent (Project, loadedMimeType);
 		}
 			
 		public override string TabPageLabel {

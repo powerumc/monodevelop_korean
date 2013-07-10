@@ -279,7 +279,7 @@ namespace MonoDevelop.Ide.Gui
 			viewsRO = null;
 		}
 
-		DocumentView WrapView (IBaseViewContent content)
+		DocumentView WrapView (BaseViewContent content)
 		{
 			if (content == null)
 				return null;
@@ -291,7 +291,7 @@ namespace MonoDevelop.Ide.Gui
 
 		public string Name {
 			get {
-				IViewContent view = Window.ViewContent;
+				ViewContent view = Window.ViewContent;
 				return view.IsUntitled ? view.UntitledName : view.ContentName;
 			}
 		}

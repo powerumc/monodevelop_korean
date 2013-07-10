@@ -38,7 +38,7 @@ namespace MonoDevelop.VersionControl
 			return true;
 		}
 
-		public ILogView CreateView (VersionControlDocumentInfo info)
+		public LogView CreateView (VersionControlDocumentInfo info)
 		{
 			return new LogView (info);
 		}

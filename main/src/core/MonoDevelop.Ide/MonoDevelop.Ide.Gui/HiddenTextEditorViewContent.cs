@@ -31,7 +31,7 @@ using Mono.TextEditor;
 
 namespace MonoDevelop.Ide.Gui
 {
-	public class HiddenTextEditorViewContent : MonoDevelop.Ide.Gui.AbstractViewContent, IEditableTextBuffer, Mono.TextEditor.ITextEditorDataProvider
+	public class HiddenTextEditorViewContent : MonoDevelop.Ide.Gui.ViewContent, IEditableTextBuffer, Mono.TextEditor.ITextEditorDataProvider
 	{
 		Mono.TextEditor.TextEditorData data;
 		

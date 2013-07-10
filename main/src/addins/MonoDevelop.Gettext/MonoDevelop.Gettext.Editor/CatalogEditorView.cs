@@ -38,7 +38,7 @@ using MonoDevelop.Ide.Gui.Content;
 
 namespace MonoDevelop.Gettext.Editor
 {
-	internal class CatalogEditorView : AbstractViewContent, IUndoHandler
+	internal class CatalogEditorView : ViewContent, IUndoHandler
 	{
 		Catalog catalog;
 		POEditorWidget poEditorWidget;
@@ -67,7 +67,6 @@ namespace MonoDevelop.Gettext.Editor
 		
 		public override void Save (string fileName)
 		{
-			OnBeforeSave (EventArgs.Empty);
 			catalog.Save (fileName);
 			ContentName = fileName;
 			IsDirty = false;

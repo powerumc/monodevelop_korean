@@ -61,7 +61,7 @@ namespace MonoDevelop.GtkCore.GuiBuilder
 		string rootName;
 		object designerStatus;
 		
-		public GuiBuilderView (IViewContent content, GuiBuilderWindow window): base (content)
+		public GuiBuilderView (ViewContent content, GuiBuilderWindow window): base (content)
 		{
 			rootName = window.Name;
 			
@@ -294,9 +294,11 @@ namespace MonoDevelop.GtkCore.GuiBuilder
 		
 		void OnWindowModifiedChanged (object s, EventArgs args)
 		{
+			// There is no need to check if the action group designer is modified
+			// since changes in the action group are as well changes in the designed widget
+			IsDirty = designer != null && designer.Modified;
 			if (IsDirty)
 				OnContentChanged (args);
-			OnDirtyChanged (args);
 		}
 		
 		void OnBindWidgetField (object o, EventArgs a)
@@ -351,17 +353,6 @@ namespace MonoDevelop.GtkCore.GuiBuilder
 			}
 			
 			gproject.SaveWindow (true, window.RootWidget.Name);
-		}
-		
-		public override bool IsDirty {
-			get {
-				// There is no need to check if the action group designer is modified
-				// since changes in the action group are as well changes in the designed widget
-				return base.IsDirty || (designer != null && designer.Modified);
-			}
-			set {
-				base.IsDirty = value;
-			}
 		}
 		
 		public override void JumpToSignalHandler (Stetic.Signal signal)

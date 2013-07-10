@@ -89,7 +89,7 @@ namespace MonoDevelop.SourceEditor
 						});
 						return "Saved and closed file.";
 					case '!':	// :w!
-						editor.View.Save ();
+						editor.View.WorkbenchWindow.Document.Save ();
 						break;
 					default:
 						return base.RunExCommand (command);

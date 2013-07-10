@@ -30,7 +30,7 @@ namespace MonoDevelop.Ide.Gui.Dialogs
 				if (!doc.IsDirty)
 					continue;
 				
-				IViewContent viewcontent = doc.Window.ViewContent;
+				ViewContent viewcontent = doc.Window.ViewContent;
 				 
 				if (viewcontent.Project != null) {
 					TreeIter projIter = TreeIter.Zero;
@@ -123,7 +123,7 @@ namespace MonoDevelop.Ide.Gui.Dialogs
 				if (window == null)
 					return false;
 				if ((bool)tsFiles.GetValue (iter, 1)) {
-					window.ViewContent.Save (window.ViewContent.ContentName);
+					window.Document.Save ();
 				} else {
 					window.ViewContent.DiscardChanges ();
 				}

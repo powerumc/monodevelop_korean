@@ -394,7 +394,7 @@ namespace MonoDevelop.Ide.Gui
 				if (options.HasFlag (OpenDocumentOptions.TryToReuseViewer)) {
 					Counters.OpenDocumentTimer.Trace ("Look for open document");
 					foreach (Document doc in Documents) {
-						IBaseViewContent vcFound = null;
+						BaseViewContent vcFound = null;
 						int vcIndex = 0;
 
 						//search all ViewContents to see if they can "re-use" this filename
@@ -461,7 +461,7 @@ namespace MonoDevelop.Ide.Gui
 			}
 		}
 		
-		IViewContent BatchOpenDocument (IProgressMonitor monitor, FilePath fileName, int line, int column)
+		ViewContent BatchOpenDocument (IProgressMonitor monitor, FilePath fileName, int line, int column)
 		{
 			if (string.IsNullOrEmpty (fileName))
 				return null;
@@ -480,7 +480,7 @@ namespace MonoDevelop.Ide.Gui
 			}
 		}
 		
-		public Document OpenDocument (IViewContent content, bool bringToFront)
+		public Document OpenDocument (ViewContent content, bool bringToFront)
 		{
 			workbench.ShowView (content, bringToFront);
 			if (bringToFront)
@@ -508,7 +508,7 @@ namespace MonoDevelop.Ide.Gui
 			if (binding == null)
 				throw new ApplicationException("Can't create display binding for mime type: " + mimeType);				
 			
-			IViewContent newContent = binding.CreateContent (null, mimeType, null);
+			ViewContent newContent = binding.CreateContent (null, mimeType, null);
 			using (content) {
 				newContent.LoadNew (content, mimeType);
 			}
@@ -695,10 +695,7 @@ namespace MonoDevelop.Ide.Gui
 						args.Cancel = window.ViewContent.IsDirty;
 					} else {
 						try {
-							if (window.ViewContent.IsFile)
-								window.ViewContent.Save (window.ViewContent.ContentName);
-							else
-								window.ViewContent.Save ();
+							window.Document.Save ();
 							args.Cancel |= window.ViewContent.IsDirty;
 
 						}
@@ -900,9 +897,9 @@ namespace MonoDevelop.Ide.Gui
 			
 			NavigationHistoryService.LogActiveDocument ();
 			
-			List<IViewContent> docViews = new List<IViewContent> ();
+			List<ViewContent> docViews = new List<ViewContent> ();
 			FilePath baseDir = args.Item.BaseDirectory;
-			IViewContent currentView = null;
+			ViewContent currentView = null;
 			
 			using (IProgressMonitor pm = ProgressMonitors.GetStatusProgressMonitor (GettextCatalog.GetString ("Loading workspace documents"), Stock.StatusSolutionOperation, true)) {
 				string currentFileName = prefs.ActiveDocument != null ? baseDir.Combine (prefs.ActiveDocument).FullPath : null;
@@ -979,7 +976,7 @@ namespace MonoDevelop.Ide.Gui
 
 		internal void ReorderDocuments (int oldPlacement, int newPlacement)
 		{
-			IViewContent content = workbench.InternalViewContentCollection[oldPlacement];
+			ViewContent content = workbench.InternalViewContentCollection[oldPlacement];
 			workbench.InternalViewContentCollection.RemoveAt (oldPlacement);
 			workbench.InternalViewContentCollection.Insert (newPlacement, content);
 
@@ -1120,7 +1117,7 @@ namespace MonoDevelop.Ide.Gui
 		public int Line { get; set; }
 		public int Column { get; set; }
 		public IViewDisplayBinding DisplayBinding { get; set; }
-		public IViewContent NewContent { get; set; }
+		public ViewContent NewContent { get; set; }
 		public Encoding Encoding { get; set; }
 		
 		public FileOpenInformation ()
@@ -1143,7 +1140,7 @@ namespace MonoDevelop.Ide.Gui
 		FileOpenInformation fileInfo;
 		DefaultWorkbench workbench;
 		IProgressMonitor monitor;
-		IViewContent newContent;
+		ViewContent newContent;
 		
 		public LoadFileWrapper (IProgressMonitor monitor, DefaultWorkbench workbench, IViewDisplayBinding binding, FileOpenInformation fileInfo)
 		{

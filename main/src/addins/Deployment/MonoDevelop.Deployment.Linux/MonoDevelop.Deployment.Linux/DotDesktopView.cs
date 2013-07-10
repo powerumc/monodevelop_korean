@@ -4,7 +4,7 @@ using MonoDevelop.Ide.Gui;
 
 namespace MonoDevelop.Deployment.Linux
 {
-	public class DotDesktopView: AbstractViewContent
+	public class DotDesktopView: ViewContent
 	{
 		DotDesktopViewWidget widget;
 		DesktopEntry entry;

@@ -37,10 +37,10 @@ using MonoDevelop.Projects.Text;
 
 namespace MonoDevelop.VersionControl.Views
 {
-	public interface IDiffView : IAttachableViewContent
+	public interface IDiffView
 	{
 	}
-	
+
 	public class DiffView : BaseView, IDiffView, IUndoHandler, IClipboardHandler
 	{
 		DiffWidget widget;
@@ -87,15 +87,13 @@ namespace MonoDevelop.VersionControl.Views
 			widget.ShowAll ();
 		}
 		
-		#region IAttachableViewContent implementation
-
 		public int GetLineInCenter (Mono.TextEditor.TextEditor editor)
 		{
 			double midY = editor.VAdjustment.Value + editor.Allocation.Height / 2;
 			return editor.YToLine (midY);
 		}
 		
-		public void Selected ()
+		protected override void OnSelected ()
 		{
 			info.Start ();
 			ComparisonWidget.UpdateLocalText ();
@@ -126,7 +124,7 @@ namespace MonoDevelop.VersionControl.Views
 			}
 		}
 		
-		public void Deselected ()
+		protected override void OnDeselected ()
 		{
 			var sourceEditor = info.Document.GetContent <MonoDevelop.SourceEditor.SourceEditorView> ();
 			if (sourceEditor != null) {
@@ -138,16 +136,6 @@ namespace MonoDevelop.VersionControl.Views
 			}
 		}
 
-		public void BeforeSave ()
-		{
-		}
-
-		public void BaseContentChanged ()
-		{
-		}
-		
-		#endregion
-		
 		#region IUndoHandler implementation
 		void IUndoHandler.Undo ()
 		{

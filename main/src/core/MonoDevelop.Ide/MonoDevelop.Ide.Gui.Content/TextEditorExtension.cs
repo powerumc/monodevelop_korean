@@ -65,7 +65,7 @@ namespace MonoDevelop.Ide.Gui.Content
 
 		protected FilePath FileName {
 			get {
-				IViewContent view = document.Window.ViewContent;
+				ViewContent view = document.Window.ViewContent;
 				return view.IsUntitled ? view.UntitledName : view.ContentName;
 			}
 		}
@@ -74,7 +74,7 @@ namespace MonoDevelop.Ide.Gui.Content
 		{
 			CheckInitialized ();
 			
-			IViewContent view = document.Window.ViewContent;
+			ViewContent view = document.Window.ViewContent;
 			string file = view.IsUntitled ? view.UntitledName : view.ContentName;
 			Project project = view.Project;
 			
@@ -87,7 +87,7 @@ namespace MonoDevelop.Ide.Gui.Content
 		{
 			CheckInitialized ();
 			
-			IViewContent view = document.Window.ViewContent;
+			ViewContent view = document.Window.ViewContent;
 			string file = view.IsUntitled ? view.UntitledName : view.ContentName;
 			return AmbienceService.GetAmbienceForFile (file);
 		}

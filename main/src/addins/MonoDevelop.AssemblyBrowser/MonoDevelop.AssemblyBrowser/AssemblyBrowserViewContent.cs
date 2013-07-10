@@ -36,7 +36,7 @@ using MonoDevelop.Core;
 
 namespace MonoDevelop.AssemblyBrowser
 {
-	public class AssemblyBrowserViewContent : AbstractViewContent, MonoDevelop.Ide.Gui.Content.IUrlHandler
+	public class AssemblyBrowserViewContent : ViewContent, MonoDevelop.Ide.Gui.Content.IUrlHandler
 	{
 		AssemblyBrowserWidget widget;
 		

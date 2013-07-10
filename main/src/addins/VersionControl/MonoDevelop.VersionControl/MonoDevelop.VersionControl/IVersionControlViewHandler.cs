@@ -32,7 +32,6 @@ using MonoDevelop.Ide.Gui;
 namespace MonoDevelop.VersionControl {
 	
 	public interface IVersionControlViewHandler<T>
-		where T : IAttachableViewContent
 	{
 		bool CanHandle (VersionControlItem item, DocumentView primaryView);
 		T CreateView (VersionControlDocumentInfo info);
@@ -48,7 +47,7 @@ namespace MonoDevelop.VersionControl {
 		
 	}
 	
-	public interface ILogViewHandler : IVersionControlViewHandler<ILogView>
+	public interface ILogViewHandler : IVersionControlViewHandler<LogView>
 	{
 		
 	}

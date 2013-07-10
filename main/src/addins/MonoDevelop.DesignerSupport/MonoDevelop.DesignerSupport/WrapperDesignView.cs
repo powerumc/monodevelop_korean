@@ -37,13 +37,13 @@ using MonoDevelop.Ide;
 namespace MonoDevelop.DesignerSupport
 {
 	
-	public class WrapperDesignView : AbstractViewContent
+	public class WrapperDesignView : ViewContent
 	{
-		IViewContent content;
+		ViewContent content;
 		Gtk.VBox contentBox;
 		Gtk.Widget topBar;
 		
-		public WrapperDesignView  (IViewContent content)
+		public WrapperDesignView  (ViewContent content)
 		{
 			this.content = content;
 			this.contentBox = new Gtk.VBox ();
@@ -76,16 +76,13 @@ namespace MonoDevelop.DesignerSupport
 			}
 		}
 		
-		protected IViewContent Content {
+		protected ViewContent Content {
 			get { return content; }
 		}
 		
-		public override MonoDevelop.Projects.Project Project {
-			get { return base.Project; }
-			set { 
-				base.Project = value; 
-				content.Project = value; 
-			}
+		protected override void OnProjectChanged ()
+		{
+			content.Project = Project; 
 		}
 		
 		protected override void OnWorkbenchWindowChanged (EventArgs e)
@@ -122,13 +119,9 @@ namespace MonoDevelop.DesignerSupport
 			content.Save (fileName);
 		}
 		
-		public override bool IsDirty {
-			get {
-				return content.IsDirty;
-			}
-			set {
-				content.IsDirty = value;
-			}
+		protected override void OnDirtyChanged (EventArgs e)
+		{
+			content.IsDirty = IsDirty;
 		}
 		
 		public override bool IsReadOnly
@@ -150,7 +143,7 @@ namespace MonoDevelop.DesignerSupport
 		
 		void OnTextDirtyChanged (object s, EventArgs args)
 		{
-			OnDirtyChanged (args);
+			IsDirty = content.IsDirty;
 		}
 		
 		void OnActiveDocumentChanged (object s, EventArgs args)

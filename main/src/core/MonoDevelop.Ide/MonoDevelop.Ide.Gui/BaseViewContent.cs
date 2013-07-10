@@ -1,4 +1,4 @@
-﻿// IViewContent.cs
+// AbstractBaseViewContent.cs
 //
 // Author:
 //   Viktoria Dudka (viktoriad@remobjects.com)
@@ -26,39 +26,63 @@
 //
 
 using System;
-using MonoDevelop.Projects;
+using System.Collections.Generic;
+using System.Text;
+using MonoDevelop.Core;
 
 namespace MonoDevelop.Ide.Gui
 {
-    public interface IViewContent : IBaseViewContent
+	public abstract class BaseViewContent
 	{
-        Project Project { get; set; }
-
-        string PathRelativeToProject { get; }
-        string ContentName { get; set; }
-        string UntitledName { get; set; }
-        string StockIconId { get; }
-
-        bool IsUntitled { get; }
-        bool IsViewOnly { get;  }
-        bool IsFile { get; }
-        bool IsDirty { get; set; }
-        bool IsReadOnly { get; }
-
-        void Load (string fileName);
-		void LoadNew (System.IO.Stream content, string mimeType);
-        void Save (string fileName);
-        void Save ();
+		IWorkbenchWindow workbenchWindow = null;
 		
-		/// <summary>
-		/// Discards all changes. This method is called before a dirty file is closed. It tells the view 
-		/// content to remove all autosave data of the file.
-		/// </summary>
-		void DiscardChanges ();
+		public abstract Gtk.Widget Control { get; }
+		
+		public virtual IWorkbenchWindow WorkbenchWindow {
+			get { return workbenchWindow; }
+			set {
+				if (workbenchWindow != value) {
+					workbenchWindow = value;
+					OnWorkbenchWindowChanged (EventArgs.Empty);
+				}
+			}
+		}
 
-        event EventHandler ContentNameChanged;
-        event EventHandler ContentChanged;
-        event EventHandler DirtyChanged;
-        event EventHandler BeforeSave;
+		public virtual string TabPageLabel {
+			get { return GettextCatalog.GetString ("Content"); }
+		}
+
+		public virtual object GetContent (Type type)
+		{
+			if (type.IsInstanceOfType (this))
+				return this;
+			else
+				return null;
+		}
+
+		public virtual void Dispose ()
+		{
+		}
+
+		public event EventHandler WorkbenchWindowChanged;
+		
+		protected virtual void OnWorkbenchWindowChanged (EventArgs e)
+		{
+			if (WorkbenchWindowChanged != null) {
+				WorkbenchWindowChanged (this, e);
+			}
+		}
+
+		internal protected virtual void OnSelected ()
+		{
+		}
+
+		internal protected virtual void OnDeselected ()
+		{
+		}
+
+		internal protected virtual void OnBaseContentChanged ()
+		{
+		}
 	}
 }

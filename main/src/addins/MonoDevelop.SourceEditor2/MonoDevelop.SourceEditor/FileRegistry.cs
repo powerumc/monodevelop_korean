@@ -194,7 +194,7 @@ namespace MonoDevelop.SourceEditor
 				view.SourceEditorWidget.ConvertLineEndings ();
 				view.SourceEditorWidget.RemoveMessageBar ();
 				view.WorkbenchWindow.ShowNotification = false;
-				view.Save ();
+				view.WorkbenchWindow.Document.Save ();
 			}
 		}
 
@@ -207,7 +207,7 @@ namespace MonoDevelop.SourceEditor
 				view.SourceEditorWidget.UseIncorrectMarkers = true;
 				view.SourceEditorWidget.RemoveMessageBar ();
 				view.WorkbenchWindow.ShowNotification = false;
-				view.Save ();
+				view.WorkbenchWindow.Document.Save ();
 			}
 		}
 		#endregion

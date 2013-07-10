@@ -34,7 +34,7 @@ using MonoDevelop.Components;
 
 namespace MonoDevelop.HexEditor
 {
-	public class HexEditorView : AbstractViewContent, IUndoHandler, IBookmarkBuffer, IZoomable
+	public class HexEditorView : ViewContent, IUndoHandler, IBookmarkBuffer, IZoomable
 	{
 		Mono.MHex.HexEditor hexEditor = new Mono.MHex.HexEditor ();
 		CompactScrolledWindow window = new CompactScrolledWindow ();

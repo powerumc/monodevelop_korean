@@ -9,11 +9,7 @@ using System.Linq;
 
 namespace MonoDevelop.VersionControl.Views
 {
-	public interface ILogView : IAttachableViewContent
-	{
-	}
-	
-	public class LogView : BaseView, ILogView 
+	public class LogView : BaseView
 	{
 		LogWidget widget;
 		VersionInfo vinfo;
@@ -132,8 +128,7 @@ namespace MonoDevelop.VersionControl.Views
 			base.Dispose ();
 		}
 
-		#region IAttachableViewContent implementation
-		public void Selected ()
+		public void LoadContent ()
 		{
 			if (info != null && !info.Started) {
 				widget.ShowLoading ();
@@ -141,18 +136,10 @@ namespace MonoDevelop.VersionControl.Views
 			}
 		}
 
-		public void Deselected ()
+		protected override void OnSelected ()
 		{
+			LoadContent ();
 		}
-
-		public void BeforeSave ()
-		{
-		}
-
-		public void BaseContentChanged ()
-		{
-		}
-		#endregion
 	}
 
 }

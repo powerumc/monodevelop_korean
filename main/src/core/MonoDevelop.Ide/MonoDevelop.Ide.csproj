@@ -1133,12 +1133,8 @@
     <Compile Include="MonoDevelop.Ide.Templates\SingleFileDescriptionTemplate.cs" />
     <Compile Include="MonoDevelop.Ide.Templates\SolutionDescriptor.cs" />
     <Compile Include="MonoDevelop.Ide.Templates\ResourceFileDescriptionTemplate.cs" />
-    <Compile Include="MonoDevelop.Ide.Gui\AbstractBaseViewContent.cs" />
     <Compile Include="MonoDevelop.Ide.Gui\AbstractPadContent.cs" />
-    <Compile Include="MonoDevelop.Ide.Gui\AbstractViewContent.cs" />
-    <Compile Include="MonoDevelop.Ide.Gui\IBaseViewContent.cs" />
     <Compile Include="MonoDevelop.Ide.Gui\IPadContent.cs" />
-    <Compile Include="MonoDevelop.Ide.Gui\IViewContent.cs" />
     <Compile Include="MonoDevelop.Ide.Gui\IWorkbenchWindow.cs" />
     <Compile Include="MonoDevelop.Ide.Gui\ViewCommandHandlers.cs" />
     <Compile Include="MonoDevelop.Ide.Gui.Content\IBookmarkBuffer.cs" />
@@ -1313,8 +1309,6 @@
     <Compile Include="MonoDevelop.Ide.FindInFiles\SearchResultWidget.cs" />
     <Compile Include="MonoDevelop.Ide.FindInFiles\ISearchProgressMonitor.cs" />
     <Compile Include="MonoDevelop.Ide.FindInFiles\SearchProgressMonitor.cs" />
-    <Compile Include="MonoDevelop.Ide.Gui\IAttachableViewContent.cs" />
-    <Compile Include="MonoDevelop.Ide.Gui\AbstractAttachableViewContent.cs" />
     <Compile Include="MonoDevelop.Ide.CodeFormatting\CodeFormattingCommands.cs" />
     <Compile Include="MonoDevelop.Ide.Execution\ParameterizedExecutionHandler.cs" />
     <Compile Include="MonoDevelop.Ide.Execution\ExecutionModeCommandService.cs" />
@@ -1880,6 +1874,8 @@
     <Compile Include="MonoDevelop.Ide.CustomTools\ResXFileCodeGenerator.cs" />
     <Compile Include="MonoDevelop.Ide.CustomTools\ThreadAsyncOperation.cs" />
     <Compile Include="MonoDevelop.Components\CellRendererImage.cs" />
+    <Compile Include="MonoDevelop.Ide.Gui\BaseViewContent.cs" />
+    <Compile Include="MonoDevelop.Ide.Gui\ViewContent.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile.am" />
