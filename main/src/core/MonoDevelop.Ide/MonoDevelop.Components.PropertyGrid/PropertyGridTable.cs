@@ -184,20 +184,17 @@ namespace MonoDevelop.Components.PropertyGrid
 			//since the tree can be built dynamically, and there can be multiple instances of each type.
 			//make a best attempt using reference equality to match objects and the name to match their properties.
 			expandedStatus = new Dictionary<object,List<string>>(new ReferenceEqualityComparer<object> ());
-			foreach (var r in rows.Where (r => r.IsExpandable)) {
+			foreach (var r in rows.Where (r => r.IsExpandable && r.Expanded)) {
 				object key;
 				string val;
-				bool mark;
 				if (r.IsCategory) {
 					key = this;
 					val = r.Label;
-					mark = !r.Expanded;
 				} else {
 					key = r.Instance;
 					val = r.Property.Name;
-					mark = r.Expanded;
 				}
-				if (key == null || !mark) {
+				if (key == null) {
 					continue;
 				}
 				List<string> list;
@@ -210,9 +207,8 @@ namespace MonoDevelop.Components.PropertyGrid
 
 		public void RestoreStatus ()
 		{
-			if (expandedStatus == null) {
+			if (expandedStatus == null)
 				return;
-			}
 
 			foreach (var r in rows.Where (r => r.IsExpandable)) {
 				object key;
@@ -225,10 +221,7 @@ namespace MonoDevelop.Components.PropertyGrid
 					val = r.Property.Name;
 				}
 				List<string> list;
-				var isMarked = expandedStatus.TryGetValue (key, out list) && list.Any (l => string.Equals (l, val));
-				//categories are expanded by default, other things are not
-				//we mark those that deviate from the defauult
-				r.Expanded = r.IsCategory ^ isMarked;
+				r.Expanded = expandedStatus.TryGetValue (key, out list) && list.Any (l => string.Equals (l, val));
 			}
 
 			expandedStatus = null;
