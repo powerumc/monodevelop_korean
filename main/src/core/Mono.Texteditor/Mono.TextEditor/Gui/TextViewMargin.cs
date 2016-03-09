@@ -50,17 +50,7 @@ namespace Mono.TextEditor
 		Pango.Rectangle[] eolMarkerLayoutRect;
 
 		internal double charWidth;
-		int highlightBracketOffset = -1;
 
-		public int HighlightBracketOffset {
-			get {
-				return highlightBracketOffset;
-			}
-			set {
-				highlightBracketOffset = value;
-			}
-		}
-		
 		double LineHeight {
 			get {
 				return textEditor.LineHeight;
@@ -437,10 +427,6 @@ namespace Mono.TextEditor
 				layout.GetPixelExtents (out logRect, out tRect);
 				eolMarkerLayoutRect [i] = tRect;
 			}
-
-			DecorateLineBg -= DecorateMatchingBracket;
-			if (textEditor.Options.HighlightMatchingBracket && !Document.ReadOnly)
-				DecorateLineBg += DecorateMatchingBracket;
 
 			if (tabArray != null) {
 				tabArray.Dispose ();
@@ -1164,7 +1150,7 @@ namespace Mono.TextEditor
 		public static uint TranslateToUTF8Index (char[] charArray, uint textIndex, ref uint curIndex, ref uint byteIndex)
 		{
 			if (textIndex > charArray.Length)
-				throw new ArgumentOutOfRangeException ("textIndex", " must be <= charArrayLength (" + charArray.Length + ") was :" + textIndex);
+				throw new ArgumentOutOfRangeException (nameof (textIndex), " must be <= charArrayLength (" + charArray.Length + ") was :" + textIndex);
 			if (textIndex < curIndex) {
 				byteIndex = (uint)Encoding.UTF8.GetByteCount (charArray, 0, (int)textIndex);
 			} else {
@@ -1330,7 +1316,7 @@ namespace Mono.TextEditor
 
 		public event LineDecorator DecorateLineBg;
 
-		const double whitespaceMarkerAlpha = 0.3;
+		const double whitespaceMarkerAlpha = 0.12;
 
 		void InnerDecorateTabsAndSpaces (Cairo.Context ctx, LayoutWrapper layout, int offset, double x, double y, int selectionStart, int selectionEnd, char spaceOrTab)
 		{
@@ -1434,24 +1420,6 @@ namespace Mono.TextEditor
 			}
 			if (textEditor.Options.IncludeWhitespaces.HasFlag (IncludeWhitespaces.Tab)) {
 				InnerDecorateTabsAndSpaces (ctx, layout, offset, x, y, selectionStart, selectionEnd, '\t');
-			}
-		}
-
-		void DecorateMatchingBracket (Cairo.Context ctx, LayoutWrapper layout, int offset, int length, double xPos, double y, int selectionStart, int selectionEnd)
-		{
-			uint curIndex = 0, byteIndex = 0;
-			if (offset <= highlightBracketOffset && highlightBracketOffset <= offset + length) {
-				int index = highlightBracketOffset - offset;
-				Pango.Rectangle rect = layout.Layout.IndexToPos ((int)TranslateToUTF8Index (layout.LineChars, (uint)index, ref curIndex, ref byteIndex));
-				
-				var bracketMatch = new Cairo.Rectangle (xPos + rect.X / Pango.Scale.PangoScale + 0.5, y + 0.5, (rect.Width / Pango.Scale.PangoScale) - 1, (rect.Height / Pango.Scale.PangoScale) - 1);
-				if (BackgroundRenderer == null) {
-					ctx.SetSourceColor (ColorStyle.BraceMatchingRectangle.Color);
-					ctx.Rectangle (bracketMatch);
-					ctx.FillPreserve ();
-					ctx.SetSourceColor (ColorStyle.BraceMatchingRectangle.SecondColor);
-					ctx.Stroke ();
-				}
 			}
 		}
 
@@ -1850,7 +1818,7 @@ namespace Mono.TextEditor
 				}
 			}
 
-			cr.SetSourceRGBA (col.R, col.G, col.B, whitespaceMarkerAlpha);
+			cr.SetSourceRGBA (col.R, col.G, col.B, whitespaceMarkerAlpha * 1.4); // needs to more opaque due to font rendering
 			cr.ShowLayout (layout);
 			cr.Restore ();
 		}
@@ -2656,7 +2624,7 @@ namespace Mono.TextEditor
 			var lineArea = new Cairo.Rectangle (correctedXOffset, y, textEditor.Allocation.Width - correctedXOffset, _lineHeight);
 			double position = x - textEditor.HAdjustment.Value + TextStartPosition;
 			defaultBgColor = Document.ReadOnly ? ColorStyle.BackgroundReadOnly.Color : ColorStyle.PlainText.Background;
-
+			var startLineNr = lineNr;
 			// Draw the default back color for the whole line. Colors other than the default
 			// background will be drawn when rendering the text chunks.
 			if (BackgroundRenderer == null)
@@ -2766,7 +2734,8 @@ namespace Mono.TextEditor
 				!this.HideSelection && 
 				textEditor.IsSomethingSelected && 
 				textEditor.SelectionMode == SelectionMode.Normal && 
-				(textEditor.MainSelection.Contains (lineNr, 1) || lineNr == textEditor.MainSelection.Start.Line);
+				textEditor.MainSelection.ContainsLine (lineNr) &&
+				textEditor.MainSelection.Contains (lineNr + 1, 1);
 
 			var lx = (int)position;
 			lineArea = new Cairo.Rectangle (lx,
@@ -2825,7 +2794,7 @@ namespace Mono.TextEditor
 						DrawRectangleWithRuler (cr, x, lineArea, this.SelectionColor.Background, false);
 					if (line.Length == 0)
 						DrawIndent (cr, wrapper, line, lx, y);
-				} else if (!(HighlightCaretLine || textEditor.GetTextEditorData ().HighlightCaretLine) || Caret.Line != lineNr) {
+				} else if (!(HighlightCaretLine || textEditor.GetTextEditorData ().HighlightCaretLine) || Caret.Line != lineNr && Caret.Line != startLineNr) {
 					wrapper = GetLayout (line);
 					if (wrapper.EolSpanStack != null) {
 						foreach (var span in wrapper.EolSpanStack) {

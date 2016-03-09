@@ -258,6 +258,8 @@ namespace MonoDevelop.Projects
 			get { return (flags & DotNetProjectFlags.GeneratesDebugInfoFile) != 0; }
 		}
 
+		public bool SupportsRoslyn { get; protected set; }
+
 		protected virtual DotNetProjectFlags OnGetDotNetProjectFlags ()
 		{
 			return DotNetProjectFlags.GeneratesDebugInfoFile;
@@ -876,13 +878,17 @@ namespace MonoDevelop.Projects
 			if (CheckUseMSBuildEngine (configuration)) {
 				// Get the references list from the msbuild project
 				RemoteProjectBuilder builder = await GetProjectBuilder ();
-				var configs = GetConfigurations (configuration, false);
+				try {
+					var configs = GetConfigurations (configuration, false);
 
-				string [] refs;
-				using (Counters.ResolveMSBuildReferencesTimer.BeginTiming (GetProjectEventMetadata (configuration)))
-					refs = await builder.ResolveAssemblyReferences (configs, CancellationToken.None);
-				foreach (var r in refs)
-					result.Add (r);
+					string [] refs;
+					using (Counters.ResolveMSBuildReferencesTimer.BeginTiming (GetProjectEventMetadata (configuration)))
+						refs = await builder.ResolveAssemblyReferences (configs, CancellationToken.None);
+					foreach (var r in refs)
+						result.Add (r);
+				} finally {
+					builder.ReleaseReference ();
+				}
 			} else {
 				foreach (ProjectReference pref in References) {
 					if (pref.ReferenceType != ReferenceType.Project) {
@@ -1111,7 +1117,6 @@ namespace MonoDevelop.Projects
 			cmd.WorkingDirectory = Path.GetDirectoryName (configuration.CompiledOutputName);
 			cmd.EnvironmentVariables = configuration.GetParsedEnvironmentVariables ();
 			cmd.TargetRuntime = TargetRuntime;
-			cmd.UserAssemblyPaths = GetUserAssemblyPaths (configSel);
 			return cmd;
 		}
 
@@ -1524,6 +1529,11 @@ namespace MonoDevelop.Projects
 
 		protected virtual async Task OnExecuteCommand (ProgressMonitor monitor, ExecutionContext context, ConfigurationSelector configuration, ExecutionCommand executionCommand)
 		{
+			var dotNetExecutionCommand = executionCommand as DotNetExecutionCommand;
+			if (dotNetExecutionCommand != null) {
+				dotNetExecutionCommand.UserAssemblyPaths = GetUserAssemblyPaths (configuration);
+			}
+
 			var dotNetProjectConfig = GetConfiguration (configuration) as DotNetProjectConfiguration;
 			var console = dotNetProjectConfig.ExternalConsole
 			                                                  ? context.ExternalConsoleFactory.CreateConsole (!dotNetProjectConfig.PauseConsoleOutput, monitor.CancellationToken)
@@ -1670,6 +1680,12 @@ namespace MonoDevelop.Projects
 			internal protected override Task OnExecuteCommand (ProgressMonitor monitor, ExecutionContext context, ConfigurationSelector configuration, ExecutionCommand executionCommand)
 			{
 				return Project.OnExecuteCommand (monitor, context, configuration, executionCommand);
+			}
+
+			internal protected override string[] SupportedLanguages {
+				get {
+					return Project.OnGetSupportedLanguages ();
+				}
 			}
 
 			#region Framework management

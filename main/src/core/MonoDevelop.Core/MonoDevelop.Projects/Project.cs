@@ -153,8 +153,7 @@ namespace MonoDevelop.Projects
 
 				if (creationContext.Project != null) {
 					this.sourceProject = creationContext.Project;
-					IMSBuildPropertySet globalGroup = sourceProject.GetGlobalPropertyGroup ();
-					projectTypeGuids = globalGroup.GetValue ("ProjectTypeGuids");
+					projectTypeGuids = sourceProject.EvaluatedProperties.GetValue ("ProjectTypeGuids");
 					if (projectTypeGuids != null) {
 						var subtypeGuids = new List<string> ();
 						foreach (string guid in projectTypeGuids.Split (';')) {
@@ -176,17 +175,23 @@ namespace MonoDevelop.Projects
 				sourceProject.FileName = FileName;
 			}
 
+			var ggroup = sourceProject.GetGlobalPropertyGroup ();
+			// Avoid crash if there is not global group
+			if (ggroup == null)
+				ggroup = sourceProject.AddNewPropertyGroup (false);
+
+			// Load the evaluated properties
+			InitMainGroupProperties (ggroup);
+		}
+
+		void InitMainGroupProperties (MSBuildPropertyGroup globalGroup)
+		{
 			// Create a project instance to be used for comparing old and new values in the global property group
 			// We use a dummy configuration and platform to avoid loading default values from the configurations
 			// while evaluating
 			var c = Guid.NewGuid ().ToString ();
-			using (var pi = CreateProjectInstaceForConfiguration (c, c)) {
-				var globalGroup = sourceProject.GetGlobalPropertyGroup ();
-				// Avoid crash if there is not global group
-				if (globalGroup == null)
-					globalGroup = sourceProject.AddNewPropertyGroup (false);
+			using (var pi = CreateProjectInstaceForConfiguration (c, c))
 				mainGroupProperties = pi.GetPropertiesLinkedToGroup (globalGroup);
-			}
 		}
 
 		protected override void OnExtensionChainInitialized ()
@@ -256,8 +261,10 @@ namespace MonoDevelop.Projects
 		{
 			var conf = (ProjectConfiguration)args.Configuration;
 
-			// Initialize the property group
-			if (!Loading)
+			// Initialize the property group only if the project is not being loaded (in which case it will
+			// be initialized by the ReadProject method) or if the project is new (because it will be initialized
+			// after the project is fully written, since only then all imports are in place
+			if (!Loading && !sourceProject.IsNewProject)
 				InitConfiguration (conf);
 
 			base.OnConfigurationAdded (args);
@@ -518,8 +525,16 @@ namespace MonoDevelop.Projects
 			await WriteProjectAsync (monitor);
 
 			// Doesn't save the file to disk if the content did not change
-			if (await sourceProject.SaveAsync (FileName) && projectBuilder != null)
-				await projectBuilder.Refresh ();
+			if (await sourceProject.SaveAsync (FileName)) {
+				var pb = GetCachedProjectBuilder ();
+				if (pb != null) {
+					try {
+						await pb.Refresh ();
+					} finally {
+						pb.ReleaseReference ();
+					}
+				}
+			}
 		}
 
 		protected override IEnumerable<WorkspaceObjectExtension> CreateDefaultExtensions ()
@@ -897,7 +912,7 @@ namespace MonoDevelop.Projects
 
 		protected virtual bool OnGetSupportsTarget (string target)
 		{
-			return sourceProject.EvaluatedTargets.Any (t => t.Name == target);
+			return sourceProject.EvaluatedTargetsIgnoringCondition.Any (t => t.Name == target);
 		}
 
 		/// <summary>
@@ -1006,9 +1021,14 @@ namespace MonoDevelop.Projects
 					var t1 = Counters.RunMSBuildTargetTimer.BeginTiming (GetProjectEventMetadata (configuration));
 					var t2 = buildTimer != null ? buildTimer.BeginTiming (GetProjectEventMetadata (configuration)) : null;
 
+					bool newBuilderRequested = false;
+
 					RemoteProjectBuilder builder = await GetProjectBuilder ();
-					if (builder.IsBusy)
+					if (builder.IsBusy) {
+						builder.ReleaseReference ();
+						newBuilderRequested = true;
 						builder = await RequestLockedBuilder ();
+					}
 					else
 						builder.Lock ();
 
@@ -1016,7 +1036,8 @@ namespace MonoDevelop.Projects
 						result = await builder.Run (configs, logWriter, MSBuildProjectService.DefaultMSBuildVerbosity, new [] { target }, evaluateItems, evaluateProperties, globalProperties, monitor.CancellationToken);
 					} finally {
 						builder.Unlock ();
-						if (builder != this.projectBuilder) {
+						builder.ReleaseReference ();
+						if (newBuilderRequested) {
 							// Dispose the builder after a while, so that it can be reused
 							#pragma warning disable 4014
 							Task.Delay (10000).ContinueWith (t => builder.Dispose ());
@@ -1146,28 +1167,47 @@ namespace MonoDevelop.Projects
 			var sln = ParentSolution;
 			var slnFile = sln != null ? sln.FileName : null;
 
+			RemoteProjectBuilder result = null;
+
 			using (await builderLock.EnterAsync ()) {
-				if (projectBuilder == null || lastBuildToolsVersion != ToolsVersion || lastBuildRuntime != runtime.Id || lastFileName != FileName || lastSlnFileName != slnFile) {
-					if (projectBuilder != null) {
-						projectBuilder.Dispose ();
-						projectBuilder = null;
+				bool refAdded = false;
+				if (projectBuilder == null || !(refAdded = projectBuilder.AddReference ()) || lastBuildToolsVersion != ToolsVersion || lastBuildRuntime != runtime.Id || lastFileName != FileName || lastSlnFileName != slnFile) {
+					if (projectBuilder != null && refAdded) {
+						projectBuilder.Shutdown ();
+						projectBuilder.ReleaseReference ();
 					}
-					projectBuilder = await MSBuildProjectService.GetProjectBuilder (runtime, ToolsVersion, FileName, slnFile, 0);
-					projectBuilder.Disconnected += delegate {
+					var pb = await MSBuildProjectService.GetProjectBuilder (runtime, ToolsVersion, FileName, slnFile, 0);
+					pb.AddReference ();
+					pb.Disconnected += delegate {
 						CleanupProjectBuilder ();
 					};
+					projectBuilder = pb;
 					lastBuildToolsVersion = ToolsVersion;
 					lastBuildRuntime = runtime.Id;
 					lastFileName = FileName;
 					lastSlnFileName = slnFile;
 				}
 				if (modifiedInMemory) {
-					modifiedInMemory = false;
-					await WriteProjectAsync (new ProgressMonitor ());
-					await projectBuilder.RefreshWithContent (sourceProject.SaveToString ());
+					try {
+						modifiedInMemory = false;
+						await WriteProjectAsync (new ProgressMonitor ());
+						await projectBuilder.RefreshWithContent (sourceProject.SaveToString ());
+					} catch {
+						projectBuilder.ReleaseReference ();
+						throw;
+					}
 				}
+				result = projectBuilder;
 			}
-			return projectBuilder;
+			return result;
+		}
+
+		RemoteProjectBuilder GetCachedProjectBuilder ()
+		{
+			var pb = projectBuilder;
+			if (pb != null && pb.AddReference ())
+				return pb;
+			return null;
 		}
 
 		async Task<RemoteProjectBuilder> RequestLockedBuilder ()
@@ -1180,27 +1220,34 @@ namespace MonoDevelop.Projects
 			var slnFile = sln != null ? sln.FileName : null;
 
 			var pb = await MSBuildProjectService.GetProjectBuilder (runtime, ToolsVersion, FileName, slnFile, 0, true);
+			pb.AddReference ();
 			if (modifiedInMemory) {
-				await WriteProjectAsync (new ProgressMonitor ());
-				await pb.RefreshWithContent (sourceProject.SaveToString ());
+				try {
+					await WriteProjectAsync (new ProgressMonitor ());
+					await pb.RefreshWithContent (sourceProject.SaveToString ());
+				} catch {
+					pb.Dispose ();
+					throw;
+				}
 			}
 			return pb;
 		}
 
 		void CleanupProjectBuilder ()
 		{
-			if (projectBuilder != null) {
-				projectBuilder.Dispose ();
-				projectBuilder = null;
+			var pb = GetCachedProjectBuilder ();
+			if (pb != null) {
+				pb.Shutdown ();
+				pb.ReleaseReference ();
 			}
 		}
 
 		public Task RefreshProjectBuilder ()
 		{
-			if (projectBuilder != null)
-				return projectBuilder.Refresh ();
-			else
-				return Task.FromResult (true);
+			var pb = GetCachedProjectBuilder ();
+			if (pb != null)
+				return pb.Refresh ().ContinueWith (t => pb.ReleaseReference ());
+			return Task.FromResult (true);
 		}
 
 		public void ReloadProjectBuilder ()
@@ -2003,6 +2050,16 @@ namespace MonoDevelop.Projects
 				globalGroup.PurgeDefaultProperties ();
 				globalGroup.ResetIsNewFlags ();
 
+				if (sourceProject.IsNewProject) {
+					// If the project is new, the evaluated properties lists are empty. Now that the project is saved,
+					// those lists can be filled, so that the project is left in the same state it would have if it
+					// was just loaded.
+					sourceProject.Evaluate ();
+					InitMainGroupProperties (globalGroup);
+					foreach (ProjectConfiguration conf in Configurations)
+						InitConfiguration (conf);
+				}
+
 				sourceProject.IsNewProject = false;
 			} finally {
 				saving = false;
@@ -2684,7 +2741,7 @@ namespace MonoDevelop.Projects
 				var p2 = evalItem.Metadata.GetProperty (p.Name);
 				if (p2 == null)
 					return false;
-				if (!p.ValueType.Equals (p.Value, p2.Value))
+				if (!p.ValueType.Equals (p.Value, p2.UnevaluatedValue))
 					return false;
 				n++;
 			}

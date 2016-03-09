@@ -117,11 +117,10 @@ namespace MonoDevelop.CSharp.Project
 			optimize = pset.GetValue ("Optimize", (bool?)null);
 		}
 
-		public override Microsoft.CodeAnalysis.CompilationOptions CreateCompilationOptions ()
+		public override CompilationOptions CreateCompilationOptions ()
 		{
 			var project = (CSharpProject) ParentProject;
-
-			return new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions (
+			return new CSharpCompilationOptions (
 				OutputKind.ConsoleApplication,
 				false,
 				null,
@@ -132,7 +131,7 @@ namespace MonoDevelop.CSharp.Project
 				GenerateOverflowChecks,
 				UnsafeCode,
 				null,
-				null,
+				ParentConfiguration.SignAssembly ? ParentConfiguration.AssemblyKeyFile : null,
 				ImmutableArray<byte>.Empty,
 				null,
 				Microsoft.CodeAnalysis.Platform.AnyCpu,
@@ -140,19 +139,22 @@ namespace MonoDevelop.CSharp.Project
 				WarningLevel,
 				null,
 				false,
-				assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default
+				assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default,
+				strongNameProvider: new DesktopStrongNameProvider ()
 			);
 		}
 
-		public override Microsoft.CodeAnalysis.ParseOptions CreateParseOptions ()
+		public override Microsoft.CodeAnalysis.ParseOptions CreateParseOptions (DotNetProjectConfiguration configuration)
 		{
+			var symbols = GetDefineSymbols ();
+			if (configuration != null)
+				symbols = symbols.Concat (configuration.GetDefineSymbols ()).Distinct ();
 			return new Microsoft.CodeAnalysis.CSharp.CSharpParseOptions (
 				GetRoslynLanguageVersion (langVersion),
 				Microsoft.CodeAnalysis.DocumentationMode.Parse,
 				Microsoft.CodeAnalysis.SourceCodeKind.Regular,
-				ImmutableArray<string>.Empty.AddRange (GetDefineSymbols ())
+				ImmutableArray<string>.Empty.AddRange (symbols)
 			);
-
 		}
 
 

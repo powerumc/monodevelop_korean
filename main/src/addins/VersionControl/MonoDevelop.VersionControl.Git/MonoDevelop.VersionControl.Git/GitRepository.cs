@@ -335,9 +335,21 @@ namespace MonoDevelop.VersionControl.Git
 			IEnumerable<Commit> commits = repository.Commits;
 			if (localFile.CanonicalPath != RootPath.CanonicalPath.ResolveLinks ()) {
 				var localPath = repository.ToGitPath (localFile);
-				commits = commits.Where (c => c.Parents.Count () == 1 && c.Tree [localPath] != null &&
-					(c.Parents.FirstOrDefault ().Tree [localPath] == null ||
-					 c.Tree [localPath].Target.Id != c.Parents.FirstOrDefault ().Tree [localPath].Target.Id));
+				commits = commits.Where (c => {
+					int count = c.Parents.Count ();
+					if (count > 1)
+						return false;
+
+					var localTreeEntry = c.Tree [localPath];
+					if (localTreeEntry == null)
+						return false;
+
+					if (count == 0)
+						return true;
+
+					var parentTreeEntry = c.Parents.Single ().Tree [localPath];
+					return parentTreeEntry == null || localTreeEntry.Target.Id != parentTreeEntry.Target.Id;
+				});
 			}
 
 			return commits.TakeWhile (c => c != sinceRev).Select (commit => {
@@ -713,6 +725,9 @@ namespace MonoDevelop.VersionControl.Git
 					Revert (RootRepository.FromGitPath (conflictFile.Ancestor.Path), false, monitor);
 					break;
 				}
+				if (res == Git.ConflictResult.Continue) {
+					Add (RootRepository.FromGitPath (conflictFile.Ancestor.Path), false, monitor);
+				}
 			}
 			if (!string.IsNullOrEmpty (message)) {
 				var sig = GetSignature ();
@@ -779,7 +794,7 @@ namespace MonoDevelop.VersionControl.Git
 			}
 		}
 
-		public void Merge (string branch, GitUpdateOptions options, ProgressMonitor monitor)
+		public void Merge (string branch, GitUpdateOptions options, ProgressMonitor monitor, FastForwardStrategy strategy = FastForwardStrategy.Default)
 		{
 			int stashIndex = -1;
 			var oldHead = RootRepository.Head.Tip;
@@ -1308,8 +1323,7 @@ namespace MonoDevelop.VersionControl.Git
 			// Notify file changes
 			NotifyFileChanges (monitor, statusList);
 
-			if (BranchSelectionChanged != null)
-				BranchSelectionChanged (this, EventArgs.Empty);
+			BranchSelectionChanged?.Invoke (this, EventArgs.Empty);
 
 			monitor.EndTask ();
 			return true;

@@ -34,7 +34,7 @@ using MonoDevelop.Components.Mac;
 
 namespace MonoDevelop.Components
 {
-	public class Control : IDisposable
+	public class Control : IDisposable, ICommandRouter
 	{
 		internal static Dictionary<object, WeakReference<Control>> cache = new Dictionary<object, WeakReference<Control>> ();
 		internal object nativeWidget;
@@ -51,7 +51,7 @@ namespace MonoDevelop.Components
 			cache.Add (nativeWidget, new WeakReference<Control> (this));
 		}
 
-		protected virtual object CreateNativeWidget ()
+		protected virtual object CreateNativeWidget<T> ()
 		{
 			throw new NotSupportedException ();
 		}
@@ -60,7 +60,7 @@ namespace MonoDevelop.Components
 		{
 			if (nativeWidget == null) {
 				var toCache = this;
-				var w = CreateNativeWidget ();
+				var w = CreateNativeWidget<T> ();
 				if (!(w is T)) {
 					var temp = w as Control;
 					while (temp != null) {
@@ -191,9 +191,7 @@ namespace MonoDevelop.Components
 		{
 			var gtkWidget = nativeWidget as Gtk.Widget;
 			if (gtkWidget != null) {
-				gtkWidget.Destroyed -= OnGtkDestroyed;
 				gtkWidget.Destroy ();
-				return;
 			}
 #if MAC
 			else if (nativeWidget is NSView)
@@ -207,6 +205,21 @@ namespace MonoDevelop.Components
 		{
 			if (nativeWidget != null)
 				cache.Remove (nativeWidget);
+
+			var gtkWidget = nativeWidget as Gtk.Widget;
+			if (gtkWidget != null) {
+				gtkWidget.Destroyed -= OnGtkDestroyed;
+			}
+		}
+
+		protected virtual object GetNextCommandTarget ()
+		{
+			return nativeWidget;
+		}
+
+		object ICommandRouter.GetNextCommandTarget ()
+		{
+			return GetNextCommandTarget ();
 		}
 	}
 }

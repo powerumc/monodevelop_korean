@@ -293,15 +293,9 @@ namespace MonoDevelop.Ide.Editor.Extension
 			autoHideCompletionWindow = autoHideParameterWindow = true;
 		}
 
-		public virtual Task<int> GetCurrentParameterIndex (int startOffset, CancellationToken token)
+		public virtual Task<int> GetCurrentParameterIndex (int startOffset, CancellationToken token = default(CancellationToken))
 		{
 			return Task.FromResult (-1);
-		}
-
-		[Obsolete("Use GetCurrentParameterIndex (int startOffset, CancellationToken token)")]
-		public virtual int GetCurrentParameterIndex (int startOffset)
-		{
-			return GetCurrentParameterIndex (startOffset, default(CancellationToken)).Result;
 		}
 
 		internal protected virtual void OnCompletionContextChanged (object o, EventArgs a)
@@ -550,11 +544,10 @@ namespace MonoDevelop.Ide.Editor.Extension
 			return null;
 		}
 
-		public virtual int GuessBestMethodOverload (ParameterHintingResult provider, int currentOverload)
+		public virtual async Task<int> GuessBestMethodOverload (ParameterHintingResult provider, int currentOverload, System.Threading.CancellationToken token)
 		{
-			int cparam = GetCurrentParameterIndex (provider.StartOffset, default(CancellationToken)).Result;
-
 			var currentHintingData = provider [currentOverload];
+			int cparam = await GetCurrentParameterIndex (provider.StartOffset, token).ConfigureAwait (false);
 			if (cparam > currentHintingData.ParameterCount && !currentHintingData.IsParameterListAllowed) {
 				// Look for an overload which has more parameters
 				int bestOverload = -1;
@@ -585,11 +578,11 @@ namespace MonoDevelop.Ide.Editor.Extension
 //			CompletionWindowManager.HideWindow ();
 //		}
 //
-//		void HandleFocusOutEvent (object o, Gtk.FocusOutEventArgs args)
-//		{
-//			ParameterInformationWindowManager.HideWindow (this, CompletionWidget);
-//			CompletionWindowManager.HideWindow ();
-//		}
+		void HandleFocusOutEvent (object sender, EventArgs args)
+		{
+			ParameterInformationWindowManager.HideWindow (this, CompletionWidget);
+			CompletionWindowManager.HideWindow ();
+		}
 
 		protected override void Initialize ()
 		{
@@ -598,8 +591,7 @@ namespace MonoDevelop.Ide.Editor.Extension
 			CompletionWidget = DocumentContext.GetContent <ICompletionWidget> () ?? CompletionWidget;
 			Editor.CaretPositionChanged += HandlePositionChanged;
 //			document.Editor.Paste += HandlePaste;
-//			if (document.Editor.Parent != null)
-//				document.Editor.Parent.TextArea.FocusOutEvent += HandleFocusOutEvent;
+			Editor.FocusLost += HandleFocusOutEvent;
 		}
 
 		internal void InternalInitialize ()
@@ -631,8 +623,7 @@ namespace MonoDevelop.Ide.Editor.Extension
                 ParameterInformationWindowManager.HideWindow(this, CompletionWidget);
 
                 disposed = true;
-                //				if (document.Editor.Parent != null)
-                //					document.Editor.Parent.TextArea.FocusOutEvent -= HandleFocusOutEvent;
+                Editor.FocusLost -= HandleFocusOutEvent;
                 //				document.Editor.Paste -= HandlePaste;
 				Deinitialize();
             }

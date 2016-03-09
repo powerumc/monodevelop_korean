@@ -41,6 +41,8 @@ using MonoDevelop.Ide.TypeSystem;
 using System.Threading;
 using MonoDevelop.Ide.Editor.Projection;
 using Xwt;
+using System.Collections.Immutable;
+using MonoDevelop.Components.Commands;
 
 namespace MonoDevelop.Ide.Editor
 {
@@ -892,21 +894,27 @@ namespace MonoDevelop.Ide.Editor
 			textEditorImpl.SetTextPasteHandler (textPasteHandler);
 		}
 
-		public IList<SkipChar> SkipChars
-		{
-			get
-			{
-				return textEditorImpl.SkipChars;
+		public EditSession CurrentSession {
+			get {
+				return textEditorImpl.CurrentSession;
 			}
 		}
 
-		/// <summary>
-		/// Skip chars are 
-		/// </summary>
-		public void AddSkipChar (int offset, char ch)
+		public void StartSession (EditSession session)
 		{
+			if (session == null)
+				throw new ArgumentNullException (nameof (session));
 			Runtime.AssertMainThread ();
-			textEditorImpl.AddSkipChar (offset, ch);
+			session.SetEditor (this);
+			textEditorImpl.StartSession (session);
+		}
+
+		internal void EndSession ()
+		{
+			if (CurrentSession == null)
+				throw new InvalidOperationException ("No session started.");
+			Runtime.AssertMainThread ();
+			textEditorImpl.EndSession ();
 		}
 
 		bool isDisposed;
@@ -926,7 +934,7 @@ namespace MonoDevelop.Ide.Editor
 			base.Dispose (disposing);
 		}
 
-		protected override object CreateNativeWidget ()
+		protected override object CreateNativeWidget<T> ()
 		{
 			return textEditorImpl.CreateNativeControl ();
 		}
@@ -1037,6 +1045,11 @@ namespace MonoDevelop.Ide.Editor
 			get {
 				return commandRouter;
 			}
+		}
+
+		protected override object GetNextCommandTarget ()
+		{
+			return commandRouter;
 		}
 
 		DocumentContext documentContext;
@@ -1164,16 +1177,16 @@ namespace MonoDevelop.Ide.Editor
 
 		#endregion
 
-		public string GetPangoMarkup (int offset, int length)
+		public string GetPangoMarkup (int offset, int length, bool fitIdeStyle = false)
 		{
-			return textEditorImpl.GetPangoMarkup (offset, length);
+			return textEditorImpl.GetPangoMarkup (offset, length, fitIdeStyle);
 		}
 
-		public string GetPangoMarkup (ISegment segment)
+		public string GetPangoMarkup (ISegment segment, bool fitIdeStyle = false)
 		{
 			if (segment == null)
 				throw new ArgumentNullException (nameof (segment));
-			return textEditorImpl.GetPangoMarkup (segment.Offset, segment.Length);
+			return textEditorImpl.GetPangoMarkup (segment.Offset, segment.Length, fitIdeStyle);
 		}
 
 		public static implicit operator Microsoft.CodeAnalysis.Text.SourceText (TextEditor editor)
@@ -1409,5 +1422,9 @@ namespace MonoDevelop.Ide.Editor
 
 		internal IEnumerable<IDocumentLine> VisibleLines { get { return textEditorImpl.VisibleLines; } }
 		internal event EventHandler<LineEventArgs> LineShown { add { textEditorImpl.LineShown += value; } remove { textEditorImpl.LineShown -= value; } }
+
+		internal ITextEditorImpl Implementation { get { return this.textEditorImpl; } }
+
+		public event EventHandler FocusLost { add { textEditorImpl.FocusLost += value; } remove { textEditorImpl.FocusLost -= value; } }
 	}
 }

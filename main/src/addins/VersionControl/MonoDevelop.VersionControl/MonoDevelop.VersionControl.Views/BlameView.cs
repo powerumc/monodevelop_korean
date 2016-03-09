@@ -61,19 +61,23 @@ namespace MonoDevelop.VersionControl.Views
 			info.Start ();
 			BlameWidget widget = Control.GetNativeWidget<BlameWidget> ();
 			widget.Reset ();
-			var sourceEditor = info.Document.GetContent <MonoDevelop.SourceEditor.SourceEditorView> ();
-			if (sourceEditor != null) {
-				widget.Editor.Caret.Location = sourceEditor.TextEditor.Caret.Location;
-				widget.Editor.VAdjustment.Value = sourceEditor.TextEditor.VAdjustment.Value;
+
+			var buffer = info.Document.GetContent<MonoDevelop.Ide.Editor.TextEditor> ();
+			if (buffer != null) {
+				var loc = buffer.CaretLocation;
+				int line = loc.Line < 1 ? 1 : loc.Line;
+				int column = loc.Column < 1 ? 1 : loc.Column;
+				widget.Editor.SetCaretTo (line, column, highlight: false, centerCaret: false);
 			}
 		}
 
 		protected override void OnDeselected ()
 		{
-			var sourceEditor = info.Document.GetContent <MonoDevelop.SourceEditor.SourceEditorView> ();
-			if (sourceEditor != null) {
-				sourceEditor.TextEditor.Caret.Location = widget.Editor.Caret.Location;
-				sourceEditor.TextEditor.VAdjustment.Value = widget.Editor.VAdjustment.Value;
+			var buffer = info.Document.GetContent<MonoDevelop.Ide.Editor.TextEditor> ();
+			if (buffer != null) {
+				BlameWidget widget = Control.GetNativeWidget<BlameWidget> ();
+				buffer.SetCaretLocation (widget.Editor.Caret.Line, widget.Editor.Caret.Column, usePulseAnimation: false, centerCaret: false);
+				buffer.ScrollTo (new Ide.Editor.DocumentLocation (widget.Editor.YToLine (widget.Editor.VAdjustment.Value), 1));
 			}
 		}
 

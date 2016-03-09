@@ -204,11 +204,6 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 		const int ItemIconTextItemSpacing = 4;
 		const int IconModePadding = 2;
 
-		static readonly Cairo.Color CategoryBackgroundGradientStartColor = new Cairo.Color (248d/255d, 248d/255d, 248d/255d);
-		static readonly Cairo.Color CategoryBackgroundGradientEndColor = new Cairo.Color (240d/255d, 240d/255d, 240d/255d);
-		static readonly Cairo.Color CategoryBorderColor = new Cairo.Color (217d/255d, 217d/255d, 217d/255d);
-		static readonly Cairo.Color CategoryLabelColor = new Cairo.Color (128d/255d, 128d/255d, 128d/255d);
-
 		protected override bool OnExposeEvent (Gdk.EventExpose e)
 		{
 			Cairo.Context cr = Gdk.CairoHelper.Create (e.Window);
@@ -252,24 +247,21 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 				if (!area.IntersectsWith (new Gdk.Rectangle (new Gdk.Point (xpos, ypos), itemDimension)))
 					return true;
 				cr.Rectangle (xpos, ypos, itemDimension.Width, itemDimension.Height);
-				using (var pat = new Cairo.LinearGradient (xpos, ypos, xpos, ypos + itemDimension.Height)) {
-					pat.AddColorStop (0, CategoryBackgroundGradientStartColor);
-					pat.AddColorStop (1, CategoryBackgroundGradientEndColor);
-					cr.SetSource (pat);
-					cr.Fill ();
-				}
+				cr.SetSourceColor (Ide.Gui.Styles.PadCategoryBackgroundColor.ToCairoColor ());
+				cr.Fill ();
+
 				if (lastCategory == null || lastCategory.IsExpanded || lastCategory.AnimatingExpand) {
 					cr.MoveTo (xpos, ypos + 0.5);
 					cr.LineTo (itemDimension.Width, ypos + 0.5);
 				}
 				cr.MoveTo (0, ypos + itemDimension.Height - 0.5);
 				cr.LineTo (xpos + Allocation.Width, ypos + itemDimension.Height - 0.5);
-				cr.SetSourceColor (CategoryBorderColor);
+				cr.SetSourceColor (MonoDevelop.Ide.Gui.Styles.PadCategoryBorderColor.ToCairoColor ());
 				cr.Stroke ();
 
 				headerLayout.SetMarkup (category.Text);
 				int width, height;
-				cr.SetSourceColor (CategoryLabelColor);
+				cr.SetSourceColor (MonoDevelop.Ide.Gui.Styles.PadCategoryLabelColor.ToCairoColor ());
 				layout.GetPixelSize (out width, out height);
 				cr.MoveTo (xpos + CategoryLeftPadding, ypos + (double)(Math.Round ((double)(itemDimension.Height - height) / 2)));
 				Pango.CairoHelper.ShowLayout (cr, headerLayout);
@@ -284,14 +276,16 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 			}, delegate (Category curCategory, Item item, Gdk.Size itemDimension) {
 				if (!area.IntersectsWith (new Gdk.Rectangle (new Gdk.Point (xpos, ypos), itemDimension)))
 					return true;
-				
+
+				var icon = item.Icon;
 				if (item == SelectedItem) {
+					icon = icon.WithStyles ("sel");
 					cr.SetSourceColor (Style.Base (StateType.Selected).ToCairoColor ());
 					cr.Rectangle (xpos, ypos, itemDimension.Width, itemDimension.Height);
 					cr.Fill ();
 				}
 				if (listMode || !curCategory.CanIconizeItems)  {
-					cr.DrawImage (this, item.Icon, xpos + ItemLeftPadding, ypos + Math.Round ((itemDimension.Height - item.Icon.Height) / 2));
+					cr.DrawImage (this, icon, xpos + ItemLeftPadding, ypos + Math.Round ((itemDimension.Height - icon.Height) / 2));
 					layout.SetMarkup (item.Text);
 					int width, height;
 					layout.GetPixelSize (out width, out height);
@@ -299,7 +293,7 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 					cr.MoveTo (xpos + ItemLeftPadding + IconSize.Width + ItemIconTextItemSpacing, ypos + (double)(Math.Round ((double)(itemDimension.Height - height) / 2)));
 					Pango.CairoHelper.ShowLayout (cr, layout);
 				} else {
-					cr.DrawImage (this, item.Icon, xpos + Math.Round ((itemDimension.Width  - item.Icon.Width) / 2), ypos + Math.Round ((itemDimension.Height - item.Icon.Height) / 2));
+					cr.DrawImage (this, icon, xpos + Math.Round ((itemDimension.Width  - icon.Width) / 2), ypos + Math.Round ((itemDimension.Height - icon.Height) / 2));
 				}
 					
 				if (item == mouseOverItem) {
@@ -317,7 +311,7 @@ namespace MonoDevelop.DesignerSupport.Toolbox
 				// Closing line when animating the last group of the toolbox
 				cr.MoveTo (area.X, ypos + 0.5);
 				cr.RelLineTo (area.Width, 0);
-				cr.SetSourceColor (CategoryBorderColor);
+				cr.SetSourceColor (MonoDevelop.Ide.Gui.Styles.PadCategoryBorderColor.ToCairoColor ());
 				cr.Stroke ();
 			}
 
